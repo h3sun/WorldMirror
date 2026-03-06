@@ -204,7 +204,6 @@
     .country-item:hover   { background: #1e2230; }
     .country-item.active  { background: #1e2a3e; color: #6fa8ff; }
 
-    .explorer-detail { }
     .explorer-detail h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
     .explorer-detail .subtitle { color: #888; font-size: 0.88rem; margin-bottom: 24px; }
 
@@ -223,18 +222,34 @@
       gap: 8px;
       margin-bottom: 5px;
     }
-    .bar-country { width: 130px; font-size: 0.82rem; text-align: right; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .bar-track { flex: 1; height: 14px; background: #1e2230; border-radius: 3px; position: relative; }
+    .bar-country { width: clamp(70px, 18%, 120px); font-size: clamp(0.68rem, 1.2vw, 0.82rem); text-align: right; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-track { flex: 1; min-width: 40px; height: 14px; background: #1e2230; border-radius: 3px; position: relative; }
     .bar-fill  { height: 14px; border-radius: 3px; position: absolute; }
     .bar-fill.pos { background: #2d6a31; right: 50%; }
     .bar-fill.neg { background: #6a2d2d; left: 50%; }
     .bar-zero  { position: absolute; left: 50%; top: 0; width: 1px; height: 14px; background: #444; }
-    .bar-val   { width: 42px; font-size: 0.78rem; font-weight: 600; flex-shrink: 0; }
+    .bar-val   { width: clamp(46px, 6ch, 62px); font-size: clamp(10px, 1.1vw, 12px); font-weight: 600; flex-shrink: 0; text-align: right; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
 
     .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 24px; }
     .stat-box  { background: #13161f; border: 1px solid #2a2f3e; border-radius: 7px; padding: 14px; text-align: center; }
     .stat-box .val { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
     .stat-box .lbl { font-size: 0.75rem; color: #666; }
+
+    /* ── About ───────────────────────────────── */
+    .about-wrap { max-width: 780px; margin: 0 auto; }
+    .about-wrap h2 { font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 14px; }
+    .about-wrap h3 { font-size: 1rem; font-weight: 600; color: #ccc; margin: 28px 0 10px; border-left: 3px solid #3a3f50; padding-left: 10px; }
+    .about-wrap p  { color: #999; font-size: 0.9rem; line-height: 1.7; margin-bottom: 10px; }
+    .about-wrap a  { color: #6fa8ff; text-decoration: none; }
+    .about-wrap a:hover { text-decoration: underline; }
+    .about-wrap code { background: #1e2230; border: 1px solid #2a2f3e; border-radius: 3px; padding: 1px 5px; font-size: 0.82rem; color: #ccc; }
+    .about-code { background: #13161f; border: 1px solid #2a2f3e; border-radius: 6px; padding: 12px 16px; font-size: 0.85rem; color: #ccc; margin: 10px 0; overflow-x: auto; }
+    .about-list { color: #999; font-size: 0.9rem; line-height: 1.8; padding-left: 20px; }
+    .about-list li { margin-bottom: 4px; }
+    .about-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 12px 0; }
+    .about-table th { text-align: left; color: #666; font-weight: 500; padding: 6px 10px; border-bottom: 1px solid #2a2f3e; }
+    .about-table td { padding: 8px 10px; border-bottom: 1px solid #1e2230; color: #999; vertical-align: top; }
+    .about-table td:first-child { width: 60px; }
 
     /* scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -254,6 +269,7 @@
   <div class="tab" data-tab="rankings">Rankings</div>
   <div class="tab" data-tab="pairs">All Pairs</div>
   <div class="tab" data-tab="explorer">Country Explorer</div>
+  <div class="tab" data-tab="about">About</div>
 </div>
 
 <div id="heatmap" class="page active">
@@ -299,7 +315,8 @@
 
 <div id="pairs" class="page">
   <div class="pairs-controls">
-    <input type="text" id="pairs-search" placeholder="Search country…">
+    <input type="text" id="pairs-src" placeholder="Source country…">
+    <input type="text" id="pairs-tgt" placeholder="Target country…">
     <select id="pairs-sort">
       <option value="avg_tone_asc">Tone ↑ (most hostile)</option>
       <option value="avg_tone_desc">Tone ↓ (most friendly)</option>
@@ -341,10 +358,75 @@
   </div>
 </div>
 
+<div id="about" class="page">
+  <div class="about-wrap">
+
+    <h2>About This Project</h2>
+    <p>WorldMirror measures how countries cover each other in the news — using sentiment scores derived from GDELT, the world's largest open database of news events and media content. The goal is to map the emotional valence of international media attention: who covers whom, and whether that coverage is positive or negative.</p>
+
+    <h3>Data Source</h3>
+    <p><strong><a href="https://www.gdeltproject.org/" target="_blank" rel="noopener">GDELT (Global Database of Events, Language and Tone)</a></strong> is a real-time open dataset that monitors news media worldwide across more than 100 languages. GDELT assigns a tone score to each article it processes, ranging from strongly negative to strongly positive, based on the emotional language used.</p>
+
+    <p>This project uses two complementary GDELT access methods:</p>
+    <table class="about-table">
+      <thead><tr><th></th><th>Method</th><th>Source attribution</th><th>Coverage</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="chip-api">API ✓</span></td>
+          <td><strong>GDELT Article Search API</strong></td>
+          <td>Exact domain → country mapping via GDELT's own source database</td>
+          <td>659 country pairs</td>
+        </tr>
+        <tr>
+          <td><span class="chip-bq">BQ ~</span></td>
+          <td><strong>GDELT BigQuery (GKG table)</strong></td>
+          <td>Top-level domain (TLD) heuristic — e.g. <code>.de</code> → Germany</td>
+          <td>1,753 additional pairs (estimated)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="color:#666;font-size:0.85rem">API results are more accurate. BigQuery TLD estimates can misattribute multinational outlets (e.g. <code>.com</code> sites) and are marked accordingly throughout the interface.</p>
+
+    <h3>Country Selection</h3>
+    <p>50 countries were selected based on <strong>SCImago Media Rankings</strong>, a bibliometric index of global media influence. These represent the countries with the highest volume and reach of English-language and international news output, ensuring sufficient article counts for meaningful sentiment estimates.</p>
+
+    <h3>Metric: Average Tone</h3>
+    <p>GDELT's tone score is derived from the <strong>LIWC (Linguistic Inquiry and Word Count)</strong> dictionary and related lexicons. For each article, GDELT computes:</p>
+    <pre class="about-code">Tone = (Positive words − Negative words) / Total words × 100</pre>
+    <p>This project aggregates tone scores across all articles where the <em>source country</em> covers the <em>target country</em> over the last 30 days, computing a weighted average tone per country pair.</p>
+    <p>A score above 0 means the coverage tends to use positive language; below 0 means negative. This is not a measure of political stance, but of the emotional valence of the words used in news articles.</p>
+
+    <h3>Interpretation</h3>
+    <p><strong>Example:</strong> A score of &minus;1.28 for <strong>United States → China</strong> means that US-based news articles mentioning China use, on average, slightly negative language — consistent with trade tensions, geopolitical rivalry, and human-rights reporting dominating the coverage.</p>
+    <p>Self-coverage (a country covering itself) is shown separately and highlighted with a gold border in the heatmap. Countries tend to cover themselves more positively than they cover others.</p>
+
+    <h3>Time Window</h3>
+    <p>All data reflects a <strong>rolling 30-day window</strong> ending at the last data collection date. Scores are therefore sensitive to major news events occurring within that window and may shift significantly over time.</p>
+
+    <h3>Limitations</h3>
+    <ul class="about-list">
+      <li><strong>Language bias</strong> — GDELT indexes primarily English-language sources and major international outlets. Coverage of smaller countries may be uneven.</li>
+      <li><strong>TLD attribution errors</strong> — BigQuery-sourced pairs use domain suffixes to infer country of origin, which can misclassify global outlets hosted under generic TLDs.</li>
+      <li><strong>Tone ≠ stance</strong> — A negative tone score reflects negative word use, not editorial position. War reporting, disaster coverage, and criticism all produce negative scores regardless of intent.</li>
+      <li><strong>Article volume</strong> — Pairs with very few articles (&lt;100) produce noisy estimates. Use the "Min articles" filter in the Heatmap and All Pairs views to restrict to higher-confidence pairs.</li>
+      <li><strong>50-country scope</strong> — Countries not in the SCImago top-50 are excluded entirely, both as sources and targets.</li>
+    </ul>
+
+    <h3>Tools &amp; Stack</h3>
+    <ul class="about-list">
+      <li><strong>Data collection:</strong> GDELT Article Search API + Google BigQuery (GDELT GKG dataset)</li>
+      <li><strong>Country selection:</strong> SCImago Media Rankings</li>
+      <li><strong>Visualization:</strong> D3.js v7 (heatmap, bar charts)</li>
+      <li><strong>Frontend:</strong> Vanilla HTML/CSS/JS, no framework</li>
+    </ul>
+
+  </div>
+</div>
+
 <script>
 // ── Data loading ──────────────────────────────────────────────────────────────
 let ALL = [], COUNTRIES = [], selectedCountry = null;
-let pairsSearch = '', pairsMin = 1000, pairsSort = 'avg_tone_asc';
+let pairsSrc = '', pairsTgt = '', pairsMin = 1000, pairsSort = 'avg_tone_asc';
 
 const FLAGS = {
   "United States":"🇺🇸","China":"🇨🇳","Russia":"🇷🇺","Germany":"🇩🇪","France":"🇫🇷",
@@ -515,15 +597,43 @@ function buildRankings() {
   const selfData = ALL.filter(d => d.source_country === d.target_country)
                       .sort((a,b) => b.avg_tone - a.avg_tone);
 
-  const maxAbs = Math.max(...ALL.map(d=>Math.abs(d.avg_tone)));
+  // Source country avg
+  const srcMap = {};
+  ALL.forEach(d => {
+    if (!srcMap[d.source_country]) srcMap[d.source_country] = [];
+    srcMap[d.source_country].push(d.avg_tone);
+  });
+  const srcAvg = Object.entries(srcMap).map(([c, tones]) => ({
+    source_country: c,
+    avg_tone: tones.reduce((a,b)=>a+b,0)/tones.length
+  })).sort((a,b) => b.avg_tone - a.avg_tone);
+
+  // Target country avg
+  const tgtMap = {};
+  ALL.forEach(d => {
+    if (!tgtMap[d.target_country]) tgtMap[d.target_country] = [];
+    tgtMap[d.target_country].push(d.avg_tone);
+  });
+  const tgtAvg = Object.entries(tgtMap).map(([c, tones]) => ({
+    source_country: c,
+    avg_tone: tones.reduce((a,b)=>a+b,0)/tones.length
+  })).sort((a,b) => b.avg_tone - a.avg_tone);
+
+  const maxAbsRankings = Math.max(
+    ...selfData.map(d => Math.abs(d.avg_tone)),
+    ...srcAvg.map(d => Math.abs(d.avg_tone)),
+    ...tgtAvg.map(d => Math.abs(d.avg_tone)),
+    1
+  );
 
   function makeList(el, rows, scoreKey='avg_tone') {
     const container = document.getElementById(el);
     container.innerHTML = '';
+    if (!rows.length) return;
     rows.forEach((d, i) => {
       const name = d.source_country || d.target_country || d.country;
       const score = d[scoreKey];
-      const pct = Math.min(100, Math.abs(score) / 5 * 100);
+      const pct = Math.min(100, Math.abs(score) / maxAbsRankings * 100);
       const color = score > 0 ? '#2d6a31' : '#6a2d2d';
       const textColor = score > 0 ? '#66bb6a' : '#ef5350';
       container.innerHTML += `
@@ -539,32 +649,8 @@ function buildRankings() {
 
   makeList('self-pos-list', selfData.slice(0, 10));
   makeList('self-neg-list', [...selfData].reverse().slice(0, 10));
-
-  // Source country avg
-  const srcMap = {};
-  ALL.forEach(d => {
-    if (!srcMap[d.source_country]) srcMap[d.source_country] = [];
-    srcMap[d.source_country].push(d.avg_tone);
-  });
-  const srcAvg = Object.entries(srcMap).map(([c, tones]) => ({
-    source_country: c,
-    avg_tone: tones.reduce((a,b)=>a+b,0)/tones.length
-  })).sort((a,b) => b.avg_tone - a.avg_tone);
-
   makeList('src-pos-list', srcAvg.slice(0, 10));
   makeList('src-neg-list', [...srcAvg].reverse().slice(0, 10));
-
-  // Target country avg
-  const tgtMap = {};
-  ALL.forEach(d => {
-    if (!tgtMap[d.target_country]) tgtMap[d.target_country] = [];
-    tgtMap[d.target_country].push(d.avg_tone);
-  });
-  const tgtAvg = Object.entries(tgtMap).map(([c, tones]) => ({
-    source_country: c,
-    avg_tone: tones.reduce((a,b)=>a+b,0)/tones.length
-  })).sort((a,b) => b.avg_tone - a.avg_tone);
-
   makeList('tgt-pos-list', tgtAvg.slice(0, 10));
   makeList('tgt-neg-list', [...tgtAvg].reverse().slice(0, 10));
 }
@@ -573,12 +659,13 @@ function buildRankings() {
 function buildPairs() {
   let rows = ALL.filter(d => d.article_count >= pairsMin);
 
-  if (pairsSearch) {
-    const q = pairsSearch.toLowerCase();
-    rows = rows.filter(d =>
-      d.source_country.toLowerCase().includes(q) ||
-      d.target_country.toLowerCase().includes(q)
-    );
+  if (pairsSrc) {
+    const q = pairsSrc.toLowerCase();
+    rows = rows.filter(d => d.source_country.toLowerCase().includes(q));
+  }
+  if (pairsTgt) {
+    const q = pairsTgt.toLowerCase();
+    rows = rows.filter(d => d.target_country.toLowerCase().includes(q));
   }
 
   const [col, dir] = pairsSort.split('_asc')[0].split('_desc')[0] !== pairsSort
@@ -611,7 +698,8 @@ function buildPairs() {
   }).join('');
 }
 
-document.getElementById('pairs-search').addEventListener('input', e => { pairsSearch = e.target.value; buildPairs(); });
+document.getElementById('pairs-src').addEventListener('input', e => { pairsSrc = e.target.value; buildPairs(); });
+document.getElementById('pairs-tgt').addEventListener('input', e => { pairsTgt = e.target.value; buildPairs(); });
 document.getElementById('pairs-min').addEventListener('change', e => { pairsMin = +e.target.value; buildPairs(); });
 document.getElementById('pairs-sort').addEventListener('change', e => { pairsSort = e.target.value; buildPairs(); });
 document.querySelectorAll('thead th[data-col]').forEach(th => {
@@ -664,11 +752,16 @@ function selectCountry(c) {
   const coveredPos = [...asTarget].filter(d=>d.source_country!==c).sort((a,b)=>b.avg_tone-a.avg_tone).slice(0,10);
   const coveredNeg = [...asTarget].filter(d=>d.source_country!==c).sort((a,b)=>a.avg_tone-b.avg_tone).slice(0,10);
 
-  const maxT = 5;
+  const allRows = [...coversPos, ...coversNeg, ...coveredPos, ...coveredNeg];
+  const maxAbsExplorer = allRows.length
+    ? Math.max(...allRows.map(d => Math.abs(d.avg_tone)))
+    : 1;
+
   function barRows(rows, valFn) {
+    if (!rows.length) return '';
     return rows.map(d => {
       const v = valFn(d);
-      const pct = Math.min(100, Math.abs(v)/maxT*100);
+      const pct = Math.min(100, Math.abs(v) / maxAbsExplorer * 100);
       const isPos = v >= 0;
       const country = valFn === (x=>x.avg_tone) ? (d.source_country===c ? d.target_country : d.source_country) :
                        (d.source_country===c ? d.target_country : d.source_country);
