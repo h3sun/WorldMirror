@@ -6,42 +6,118 @@
   <title>Global Media Tone — GDELT Analysis</title>
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   <style>
+    /* ── Theme variables ─────────────────────── */
+    :root {
+      --bg:       #0e1117;
+      --bg-2:     #13161f;
+      --bg-3:     #1e2230;
+      --bg-4:     #1a1e2a;
+      --bg-hdr:   #1a1f2e;
+      --border:   #2a2f3e;
+      --border-2: #3a3f50;
+      --text:     #e0e0e0;
+      --text-2:   #888;
+      --text-3:   #666;
+      --text-4:   #555;
+      --text-5:   #aaa;
+      --text-6:   #ccc;
+      --text-7:   #ddd;
+      --text-8:   #bbb;
+      --white:    #fff;
+      --accent:   #6fa8ff;
+      --zero-ln:  #444;
+      --chip-pos-bg: #1b3a1f; --chip-pos: #66bb6a;
+      --chip-neg-bg: #3a1b1b; --chip-neg: #ef5350;
+      --chip-neu-bg: #2a2a1b; --chip-neu: #d4ac00;
+      --chip-api-bg: #1a2a3a; --chip-api: #6fa8ff;
+      --chip-bq-bg:  #252520; --chip-bq:  #888;
+      --ctry-active: #1e2a3e;
+      --bar-pos: #2d6a31;
+      --bar-neg: #6a2d2d;
+    }
+    html.light {
+      --bg:       #f4f6fb;
+      --bg-2:     #ffffff;
+      --bg-3:     #e8ecf4;
+      --bg-4:     #dde2ed;
+      --bg-hdr:   #e4e9f5;
+      --border:   #ced4e2;
+      --border-2: #b0bace;
+      --text:     #1e2230;
+      --text-2:   #5a6475;
+      --text-3:   #6b7585;
+      --text-4:   #8a96a8;
+      --text-5:   #4a5568;
+      --text-6:   #2a3348;
+      --text-7:   #1a2030;
+      --text-8:   #3a4558;
+      --white:    #0d111e;
+      --accent:   #1a5aa8;
+      --zero-ln:  #aab0c0;
+      --chip-pos-bg: #d4f0d6; --chip-pos: #1a7a1f;
+      --chip-neg-bg: #f5d0d0; --chip-neg: #c0241e;
+      --chip-neu-bg: #f5efc0; --chip-neu: #7a5f00;
+      --chip-api-bg: #d0e4f8; --chip-api: #1a5aa8;
+      --chip-bq-bg:  #e4e4dc; --chip-bq:  #556070;
+      --ctry-active: #d0e4f8;
+      --bar-pos: #3d9142;
+      --bar-neg: #c0372f;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: #0e1117;
-      color: #e0e0e0;
+      background: var(--bg);
+      color: var(--text);
       font-family: 'Segoe UI', system-ui, sans-serif;
       min-height: 100vh;
+      transition: background 0.2s, color 0.2s;
     }
 
     header {
-      background: linear-gradient(135deg, #1a1f2e 0%, #0e1117 100%);
-      border-bottom: 1px solid #2a2f3e;
+      background: linear-gradient(135deg, var(--bg-hdr) 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
       padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
-    header h1 { font-size: 1.7rem; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
-    header p  { color: #888; font-size: 0.9rem; margin-top: 4px; }
+    header h1 { font-size: 1.7rem; font-weight: 700; color: var(--white); letter-spacing: -0.3px; }
+    header p  { color: var(--text-2); font-size: 0.9rem; margin-top: 4px; }
+
+    #theme-btn {
+      flex-shrink: 0;
+      background: transparent;
+      border: 1px solid var(--border-2);
+      color: var(--text-2);
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    #theme-btn:hover { color: var(--text); border-color: var(--text-2); }
 
     .tabs {
       display: flex;
       gap: 4px;
       padding: 16px 40px 0;
-      border-bottom: 1px solid #2a2f3e;
-      background: #13161f;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-2);
     }
     .tab {
       padding: 10px 20px;
       border-radius: 6px 6px 0 0;
       cursor: pointer;
       font-size: 0.9rem;
-      color: #888;
+      color: var(--text-2);
       border: 1px solid transparent;
       border-bottom: none;
       transition: all 0.2s;
     }
-    .tab:hover  { color: #ccc; background: #1e2230; }
-    .tab.active { color: #fff; background: #0e1117; border-color: #2a2f3e; }
+    .tab:hover  { color: var(--text-6); background: var(--bg-3); }
+    .tab.active { color: var(--white); background: var(--bg); border-color: var(--border); }
 
     .page { display: none; padding: 32px 40px; }
     .page.active { display: block; }
@@ -49,8 +125,8 @@
     /* ── Heatmap ─────────────────────────────── */
     #heatmap-container {
       overflow: auto;
-      background: #13161f;
-      border: 1px solid #2a2f3e;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
       border-radius: 8px;
       padding: 16px;
     }
@@ -61,29 +137,29 @@
       margin-bottom: 16px;
       flex-wrap: wrap;
     }
-    #heatmap-controls label { font-size: 0.85rem; color: #888; }
+    #heatmap-controls label { font-size: 0.85rem; color: var(--text-2); }
     #heatmap-controls select, #heatmap-controls input {
-      background: #1e2230;
-      border: 1px solid #3a3f50;
-      color: #ccc;
+      background: var(--bg-3);
+      border: 1px solid var(--border-2);
+      color: var(--text-6);
       padding: 5px 10px;
       border-radius: 5px;
       font-size: 0.85rem;
     }
     .heatmap-tooltip {
       position: fixed;
-      background: #1e2230;
-      border: 1px solid #3a3f50;
+      background: var(--bg-3);
+      border: 1px solid var(--border-2);
       border-radius: 6px;
       padding: 10px 14px;
       pointer-events: none;
       font-size: 0.82rem;
-      color: #e0e0e0;
+      color: var(--text);
       z-index: 100;
       display: none;
       max-width: 260px;
     }
-    .heatmap-tooltip strong { color: #fff; }
+    .heatmap-tooltip strong { color: var(--white); }
     .tone-positive { color: #66bb6a; }
     .tone-negative { color: #ef5350; }
 
@@ -96,25 +172,25 @@
     @media (max-width: 900px) { .rankings-grid { grid-template-columns: 1fr; } }
 
     .card {
-      background: #13161f;
-      border: 1px solid #2a2f3e;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
       border-radius: 8px;
       padding: 20px;
     }
-    .card h3 { font-size: 0.95rem; color: #aaa; margin-bottom: 16px; font-weight: 500; }
+    .card h3 { font-size: 0.95rem; color: var(--text-5); margin-bottom: 16px; font-weight: 500; }
 
     .rank-row {
       display: flex;
       align-items: center;
       gap: 10px;
       padding: 7px 0;
-      border-bottom: 1px solid #1e2230;
+      border-bottom: 1px solid var(--bg-3);
     }
     .rank-row:last-child { border-bottom: none; }
-    .rank-num  { width: 26px; text-align: right; font-size: 0.75rem; color: #555; flex-shrink: 0; }
+    .rank-num  { width: 26px; text-align: right; font-size: 0.75rem; color: var(--text-4); flex-shrink: 0; }
     .rank-flag { font-size: 1.1rem; flex-shrink: 0; }
     .rank-name { flex: 1; font-size: 0.88rem; }
-    .rank-bar-wrap { width: 90px; height: 6px; background: #1e2230; border-radius: 3px; flex-shrink: 0; }
+    .rank-bar-wrap { width: 90px; height: 6px; background: var(--bg-3); border-radius: 3px; flex-shrink: 0; }
     .rank-bar  { height: 6px; border-radius: 3px; transition: width 0.4s; }
     .rank-score { width: 52px; text-align: right; font-size: 0.82rem; font-weight: 600; flex-shrink: 0; }
 
@@ -127,9 +203,9 @@
       align-items: center;
     }
     .pairs-controls input, .pairs-controls select {
-      background: #1e2230;
-      border: 1px solid #3a3f50;
-      color: #ccc;
+      background: var(--bg-3);
+      border: 1px solid var(--border-2);
+      color: var(--text);
       padding: 7px 12px;
       border-radius: 6px;
       font-size: 0.85rem;
@@ -140,17 +216,17 @@
     thead th {
       text-align: left;
       padding: 9px 12px;
-      color: #888;
+      color: var(--text-2);
       font-weight: 500;
-      border-bottom: 1px solid #2a2f3e;
+      border-bottom: 1px solid var(--border);
       cursor: pointer;
       white-space: nowrap;
     }
-    thead th:hover { color: #ccc; }
+    thead th:hover { color: var(--text-6); }
     thead th .sort-icon { margin-left: 4px; opacity: 0.4; }
-    thead th.sorted .sort-icon { opacity: 1; color: #6fa8ff; }
-    tbody tr { border-bottom: 1px solid #1a1e2a; transition: background 0.1s; }
-    tbody tr:hover { background: #1a1e2a; }
+    thead th.sorted .sort-icon { opacity: 1; color: var(--accent); }
+    tbody tr { border-bottom: 1px solid var(--bg-4); transition: background 0.1s; }
+    tbody tr:hover { background: var(--bg-4); }
     tbody td { padding: 8px 12px; }
     .tone-chip {
       display: inline-block;
@@ -159,11 +235,11 @@
       font-size: 0.78rem;
       font-weight: 600;
     }
-    .chip-pos { background: #1b3a1f; color: #66bb6a; }
-    .chip-neg { background: #3a1b1b; color: #ef5350; }
-    .chip-neu { background: #2a2a1b; color: #d4ac00; }
-    .chip-api { background: #1a2a3a; color: #6fa8ff; font-size: 0.72rem; padding: 1px 6px; border-radius: 8px; font-weight: 500; }
-    .chip-bq  { background: #252520; color: #888;    font-size: 0.72rem; padding: 1px 6px; border-radius: 8px; font-weight: 500; }
+    .chip-pos { background: var(--chip-pos-bg); color: var(--chip-pos); }
+    .chip-neg { background: var(--chip-neg-bg); color: var(--chip-neg); }
+    .chip-neu { background: var(--chip-neu-bg); color: var(--chip-neu); }
+    .chip-api { background: var(--chip-api-bg); color: var(--chip-api); font-size: 0.72rem; padding: 1px 6px; border-radius: 8px; font-weight: 500; }
+    .chip-bq  { background: var(--chip-bq-bg);  color: var(--chip-bq);  font-size: 0.72rem; padding: 1px 6px; border-radius: 8px; font-weight: 500; }
 
     /* ── Explorer ────────────────────────────── */
     .explorer-grid {
@@ -174,17 +250,17 @@
     @media (max-width: 800px) { .explorer-grid { grid-template-columns: 1fr; } }
 
     .country-picker {
-      background: #13161f;
-      border: 1px solid #2a2f3e;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
       border-radius: 8px;
       padding: 16px;
     }
-    .country-picker h3 { font-size: 0.9rem; color: #888; margin-bottom: 12px; }
+    .country-picker h3 { font-size: 0.9rem; color: var(--text-2); margin-bottom: 12px; }
     .country-search {
       width: 100%;
-      background: #1e2230;
-      border: 1px solid #3a3f50;
-      color: #ccc;
+      background: var(--bg-3);
+      border: 1px solid var(--border-2);
+      color: var(--text);
       padding: 7px 10px;
       border-radius: 5px;
       font-size: 0.85rem;
@@ -201,11 +277,11 @@
       gap: 8px;
       transition: background 0.15s;
     }
-    .country-item:hover   { background: #1e2230; }
-    .country-item.active  { background: #1e2a3e; color: #6fa8ff; }
+    .country-item:hover   { background: var(--bg-3); }
+    .country-item.active  { background: var(--ctry-active); color: var(--accent); }
 
     .explorer-detail h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
-    .explorer-detail .subtitle { color: #888; font-size: 0.88rem; margin-bottom: 24px; }
+    .explorer-detail .subtitle { color: var(--text-2); font-size: 0.88rem; margin-bottom: 24px; }
 
     .explorer-panels {
       display: grid;
@@ -214,7 +290,7 @@
     }
     @media (max-width: 1100px) { .explorer-panels { grid-template-columns: 1fr; } }
 
-    .panel-title { font-size: 0.82rem; color: #888; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .panel-title { font-size: 0.82rem; color: var(--text-2); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
 
     .bar-row {
       display: flex;
@@ -223,61 +299,64 @@
       margin-bottom: 5px;
     }
     .bar-country { flex: 0 0 110px; width: 110px; font-size: 0.78rem; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .bar-track { flex: 1; min-width: 30px; height: 14px; background: #1e2230; border-radius: 3px; position: relative; overflow: hidden; }
+    .bar-track { flex: 1; min-width: 30px; height: 14px; background: var(--bg-3); border-radius: 3px; position: relative; overflow: hidden; }
     .bar-fill  { height: 14px; border-radius: 3px; position: absolute; }
-    .bar-fill.pos { background: #2d6a31; right: 50%; }
-    .bar-fill.neg { background: #6a2d2d; left: 50%; }
-    .bar-zero  { position: absolute; left: 50%; top: 0; width: 1px; height: 14px; background: #444; }
+    .bar-fill.pos { background: var(--bar-pos); right: 50%; }
+    .bar-fill.neg { background: var(--bar-neg); left: 50%; }
+    .bar-zero  { position: absolute; left: 50%; top: 0; width: 1px; height: 14px; background: var(--zero-ln); }
     .bar-val   { flex: 0 0 52px; width: 52px; font-size: 0.75rem; font-weight: 600; text-align: right; white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
 
     .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 24px; }
-    .stat-box  { background: #13161f; border: 1px solid #2a2f3e; border-radius: 7px; padding: 14px; text-align: center; }
+    .stat-box  { background: var(--bg-2); border: 1px solid var(--border); border-radius: 7px; padding: 14px; text-align: center; }
     .stat-box .val { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
-    .stat-box .lbl { font-size: 0.75rem; color: #666; }
+    .stat-box .lbl { font-size: 0.75rem; color: var(--text-3); }
 
     /* ── About ───────────────────────────────── */
     .about-wrap { max-width: 780px; margin: 0 auto; }
-    .about-wrap h2 { font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 14px; }
-    .about-wrap h3 { font-size: 1rem; font-weight: 600; color: #ccc; margin: 28px 0 10px; border-left: 3px solid #3a3f50; padding-left: 10px; }
-    .about-wrap p  { color: #999; font-size: 0.9rem; line-height: 1.7; margin-bottom: 10px; }
-    .about-wrap a  { color: #6fa8ff; text-decoration: none; }
+    .about-wrap h2 { font-size: 1.4rem; font-weight: 700; color: var(--white); margin-bottom: 14px; }
+    .about-wrap h3 { font-size: 1rem; font-weight: 600; color: var(--text-6); margin: 28px 0 10px; border-left: 3px solid var(--border-2); padding-left: 10px; }
+    .about-wrap p  { color: var(--text-5); font-size: 0.9rem; line-height: 1.7; margin-bottom: 10px; }
+    .about-wrap a  { color: var(--accent); text-decoration: none; }
     .about-wrap a:hover { text-decoration: underline; }
-    .about-wrap code { background: #1e2230; border: 1px solid #2a2f3e; border-radius: 3px; padding: 1px 5px; font-size: 0.82rem; color: #ccc; }
-    .about-code { background: #13161f; border: 1px solid #2a2f3e; border-radius: 6px; padding: 12px 16px; font-size: 0.85rem; color: #ccc; margin: 10px 0; overflow-x: auto; }
-    .about-list { color: #999; font-size: 0.9rem; line-height: 1.8; padding-left: 20px; }
+    .about-wrap code { background: var(--bg-3); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; font-size: 0.82rem; color: var(--text-6); }
+    .about-code { background: var(--bg-2); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; font-size: 0.85rem; color: var(--text-6); margin: 10px 0; overflow-x: auto; }
+    .about-list { color: var(--text-5); font-size: 0.9rem; line-height: 1.8; padding-left: 20px; }
     .about-list li { margin-bottom: 4px; }
     .about-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 12px 0; }
-    .about-table th { text-align: left; color: #666; font-weight: 500; padding: 6px 10px; border-bottom: 1px solid #2a2f3e; }
-    .about-table td { padding: 8px 10px; border-bottom: 1px solid #1e2230; color: #999; vertical-align: top; }
+    .about-table th { text-align: left; color: var(--text-3); font-weight: 500; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+    .about-table td { padding: 8px 10px; border-bottom: 1px solid var(--bg-3); color: var(--text-5); vertical-align: top; }
     .about-table td:first-child { width: 60px; }
 
     /* ── Summary ─────────────────────────────── */
-    .summary-intro { color: #888; font-size: 0.9rem; margin-bottom: 32px; max-width: 680px; line-height: 1.6; }
+    .summary-intro { color: var(--text-2); font-size: 0.9rem; margin-bottom: 32px; max-width: 680px; line-height: 1.6; }
     .summary-kpi-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 40px; }
-    .summary-kpi { background: #13161f; border: 1px solid #2a2f3e; border-radius: 8px; padding: 18px 22px; flex: 1; min-width: 140px; }
+    .summary-kpi { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; flex: 1; min-width: 140px; }
     .summary-kpi .kpi-val { font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
-    .summary-kpi .kpi-lbl { font-size: 0.75rem; color: #666; }
+    .summary-kpi .kpi-lbl { font-size: 0.75rem; color: var(--text-3); }
     .findings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     @media (max-width: 900px) { .findings-grid { grid-template-columns: 1fr; } }
-    .finding-card { background: #13161f; border: 1px solid #2a2f3e; border-radius: 10px; padding: 22px 24px; }
+    .finding-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 22px 24px; }
     .finding-card .f-icon { font-size: 1.5rem; margin-bottom: 10px; }
-    .finding-card .f-title { font-size: 0.92rem; font-weight: 600; color: #ddd; margin-bottom: 10px; }
+    .finding-card .f-title { font-size: 0.92rem; font-weight: 600; color: var(--text-7); margin-bottom: 10px; }
     .finding-card .f-stat { font-size: 1.25rem; font-weight: 700; margin: 6px 0 10px; }
-    .finding-card .f-body { font-size: 0.83rem; color: #888; line-height: 1.65; }
-    .finding-card .f-body strong { color: #bbb; }
-    .f-highlight { display: inline-block; background: #1e2230; border-radius: 4px; padding: 1px 6px; font-family: monospace; font-size: 0.85em; }
+    .finding-card .f-body { font-size: 0.83rem; color: var(--text-2); line-height: 1.65; }
+    .finding-card .f-body strong { color: var(--text-8); }
+    .f-highlight { display: inline-block; background: var(--bg-3); border-radius: 4px; padding: 1px 6px; font-family: monospace; font-size: 0.85em; }
 
     /* scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0e1117; }
-    ::-webkit-scrollbar-thumb { background: #3a3f50; border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>🌐 Global Media Tone Analysis</h1>
-  <p>Country-to-country news coverage sentiment &nbsp;·&nbsp; GDELT &nbsp;·&nbsp; Last 30 days &nbsp;·&nbsp; 50 countries, 2,447 pairs &nbsp;·&nbsp; <span style="color:#6fa8ff">659 API verified</span> + <span style="color:#666">1753 BigQuery estimated (SCImago)</span></p>
+  <div>
+    <h1>🌐 Global Media Tone Analysis</h1>
+    <p>Country-to-country news coverage sentiment &nbsp;·&nbsp; GDELT &nbsp;·&nbsp; Last 30 days &nbsp;·&nbsp; 50 countries, 2,447 pairs &nbsp;·&nbsp; <span style="color:#6fa8ff">659 API verified</span> + <span style="color:#666">1753 BigQuery estimated (SCImago)</span></p>
+  </div>
+  <button id="theme-btn" onclick="toggleTheme()">☀️ Light</button>
 </header>
 
 <div class="tabs">
@@ -310,7 +389,7 @@
 <div id="rankings" class="page">
   <div class="rankings-grid">
     <div class="card">
-      <h3>🏆 Most Positive Self-Coverage (国家自我报道情绪)</h3>
+      <h3>🏆 Most Positive Self-Coverage </h3>
       <div id="self-pos-list"></div>
     </div>
     <div class="card">
@@ -575,13 +654,15 @@ function buildHeatmap() {
       .attr('rx', 1).attr('pointer-events', 'none');
   });
 
+  const axisColor = getComputedStyle(document.documentElement).getPropertyValue('--text-2').trim() || '#888';
+
   // X labels (columns = target)
   ordered.forEach((c, i) => {
     g.append('text')
       .attr('x', i*cell + cell/2).attr('y', -5)
       .attr('text-anchor', 'start')
       .attr('transform', `rotate(-45, ${i*cell + cell/2}, -5)`)
-      .attr('fill', '#999').attr('font-size', 10)
+      .attr('fill', axisColor).attr('font-size', 10)
       .text((FLAGS[c]||'') + ' ' + c);
   });
 
@@ -590,7 +671,7 @@ function buildHeatmap() {
     g.append('text')
       .attr('x', -6).attr('y', i*cell + cell/2 + 3.5)
       .attr('text-anchor', 'end')
-      .attr('fill', '#999').attr('font-size', 10)
+      .attr('fill', axisColor).attr('font-size', 10)
       .text((FLAGS[c]||'') + ' ' + c);
   });
 
@@ -607,9 +688,11 @@ function buildHeatmap() {
   const cbg = svg.append('g').attr('transform', `translate(${margin.left + barX}, ${margin.top + H + 10})`);
   cbg.append('rect').attr('width', barW).attr('height', barH)
      .attr('fill','url(#cb-grad)').attr('rx',2);
-  cbg.append('text').attr('x',0).attr('y',-3).attr('fill','#666').attr('font-size',9).text('-'+range);
-  cbg.append('text').attr('x',barW).attr('y',-3).attr('text-anchor','end').attr('fill','#666').attr('font-size',9).text('+'+range);
-  cbg.append('text').attr('x',barW/2).attr('y',barH+12).attr('text-anchor','middle').attr('fill','#555').attr('font-size',9).text('Average Tone Score');
+  const labelColor = getComputedStyle(document.documentElement).getPropertyValue('--text-3').trim() || '#666';
+  const mutedColor = getComputedStyle(document.documentElement).getPropertyValue('--text-4').trim() || '#555';
+  cbg.append('text').attr('x',0).attr('y',-3).attr('fill',labelColor).attr('font-size',9).text('-'+range);
+  cbg.append('text').attr('x',barW).attr('y',-3).attr('text-anchor','end').attr('fill',labelColor).attr('font-size',9).text('+'+range);
+  cbg.append('text').attr('x',barW/2).attr('y',barH+12).attr('text-anchor','middle').attr('fill',mutedColor).attr('font-size',9).text('Average Tone Score');
 }
 
 document.getElementById('min-articles').addEventListener('change', buildHeatmap);
@@ -983,6 +1066,22 @@ function selectCountry(c) {
         ${barRows(coveredNeg, d=>d.avg_tone)}
       </div>
     </div>`;
+}
+
+// ── Theme toggle ──────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  document.getElementById('theme-btn').textContent = isLight ? '🌙 Dark' : '☀️ Light';
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  if (isLight) buildHeatmap(); // redraw heatmap labels with updated text color
+}
+// Restore saved preference
+if (localStorage.getItem('theme') === 'light') {
+  document.documentElement.classList.add('light');
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('theme-btn');
+    if (btn) btn.textContent = '🌙 Dark';
+  });
 }
 </script>
 </body>
