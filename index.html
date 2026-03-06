@@ -995,11 +995,12 @@ function selectCountry(c) {
   const avgToneOut = asSource.filter(d=>d.target_country!==c).reduce((s,d,_,a)=>s+d.avg_tone/a.length,0);
   const avgToneIn  = asTarget.filter(d=>d.source_country!==c).reduce((s,d,_,a)=>s+d.avg_tone/a.length,0);
 
+  const MIN_PAIR_ARTICLES = 1200;
   // Covers most positively (as source)
-  const coversPos = [...asSource].filter(d=>d.target_country!==c).sort((a,b)=>b.avg_tone-a.avg_tone).slice(0,10);
-  const coversNeg = [...asSource].filter(d=>d.target_country!==c).sort((a,b)=>a.avg_tone-b.avg_tone).slice(0,10);
-  const coveredPos = [...asTarget].filter(d=>d.source_country!==c).sort((a,b)=>b.avg_tone-a.avg_tone).slice(0,10);
-  const coveredNeg = [...asTarget].filter(d=>d.source_country!==c).sort((a,b)=>a.avg_tone-b.avg_tone).slice(0,10);
+  const coversPos = [...asSource].filter(d=>d.target_country!==c && d.article_count>=MIN_PAIR_ARTICLES).sort((a,b)=>b.avg_tone-a.avg_tone).slice(0,10);
+  const coversNeg = [...asSource].filter(d=>d.target_country!==c && d.article_count>=MIN_PAIR_ARTICLES).sort((a,b)=>a.avg_tone-b.avg_tone).slice(0,10);
+  const coveredPos = [...asTarget].filter(d=>d.source_country!==c && d.article_count>=MIN_PAIR_ARTICLES).sort((a,b)=>b.avg_tone-a.avg_tone).slice(0,10);
+  const coveredNeg = [...asTarget].filter(d=>d.source_country!==c && d.article_count>=MIN_PAIR_ARTICLES).sort((a,b)=>a.avg_tone-b.avg_tone).slice(0,10);
 
   const allRows = [...coversPos, ...coversNeg, ...coveredPos, ...coveredNeg];
   const maxAbsExplorer = allRows.length
