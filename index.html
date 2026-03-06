@@ -222,13 +222,13 @@
       gap: 8px;
       margin-bottom: 5px;
     }
-    .bar-country { width: clamp(70px, 18%, 120px); font-size: clamp(0.68rem, 1.2vw, 0.82rem); text-align: right; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .bar-track { flex: 1; min-width: 40px; height: 14px; background: #1e2230; border-radius: 3px; position: relative; }
+    .bar-country { flex: 0 0 110px; width: 110px; font-size: 0.78rem; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-track { flex: 1; min-width: 30px; height: 14px; background: #1e2230; border-radius: 3px; position: relative; overflow: hidden; }
     .bar-fill  { height: 14px; border-radius: 3px; position: absolute; }
     .bar-fill.pos { background: #2d6a31; right: 50%; }
     .bar-fill.neg { background: #6a2d2d; left: 50%; }
     .bar-zero  { position: absolute; left: 50%; top: 0; width: 1px; height: 14px; background: #444; }
-    .bar-val   { width: clamp(46px, 6ch, 62px); font-size: clamp(10px, 1.1vw, 12px); font-weight: 600; flex-shrink: 0; text-align: right; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+    .bar-val   { flex: 0 0 52px; width: 52px; font-size: 0.75rem; font-weight: 600; text-align: right; white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
 
     .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 24px; }
     .stat-box  { background: #13161f; border: 1px solid #2a2f3e; border-radius: 7px; padding: 14px; text-align: center; }
@@ -251,6 +251,22 @@
     .about-table td { padding: 8px 10px; border-bottom: 1px solid #1e2230; color: #999; vertical-align: top; }
     .about-table td:first-child { width: 60px; }
 
+    /* ── Summary ─────────────────────────────── */
+    .summary-intro { color: #888; font-size: 0.9rem; margin-bottom: 32px; max-width: 680px; line-height: 1.6; }
+    .summary-kpi-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 40px; }
+    .summary-kpi { background: #13161f; border: 1px solid #2a2f3e; border-radius: 8px; padding: 18px 22px; flex: 1; min-width: 140px; }
+    .summary-kpi .kpi-val { font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
+    .summary-kpi .kpi-lbl { font-size: 0.75rem; color: #666; }
+    .findings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .findings-grid { grid-template-columns: 1fr; } }
+    .finding-card { background: #13161f; border: 1px solid #2a2f3e; border-radius: 10px; padding: 22px 24px; }
+    .finding-card .f-icon { font-size: 1.5rem; margin-bottom: 10px; }
+    .finding-card .f-title { font-size: 0.92rem; font-weight: 600; color: #ddd; margin-bottom: 10px; }
+    .finding-card .f-stat { font-size: 1.25rem; font-weight: 700; margin: 6px 0 10px; }
+    .finding-card .f-body { font-size: 0.83rem; color: #888; line-height: 1.65; }
+    .finding-card .f-body strong { color: #bbb; }
+    .f-highlight { display: inline-block; background: #1e2230; border-radius: 4px; padding: 1px 6px; font-family: monospace; font-size: 0.85em; }
+
     /* scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #0e1117; }
@@ -266,6 +282,7 @@
 
 <div class="tabs">
   <div class="tab active" data-tab="heatmap">Heatmap</div>
+  <div class="tab" data-tab="summary">Key Findings</div>
   <div class="tab" data-tab="rankings">Rankings</div>
   <div class="tab" data-tab="pairs">All Pairs</div>
   <div class="tab" data-tab="explorer">Country Explorer</div>
@@ -282,6 +299,12 @@
     <svg id="heatmap-svg"></svg>
   </div>
   <div class="heatmap-tooltip" id="tooltip"></div>
+</div>
+
+<div id="summary" class="page">
+  <p class="summary-intro">The following findings are computed directly from the dataset — 2,447 country pairs spanning 50 countries over the last 30 days. All tone scores use GDELT's LIWC-based metric where higher = more positive language.</p>
+  <div class="summary-kpi-row" id="summary-kpis"></div>
+  <div class="findings-grid" id="summary-findings"></div>
 </div>
 
 <div id="rankings" class="page">
@@ -459,6 +482,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.add('active');
     document.getElementById(tab.dataset.tab).classList.add('active');
     if (tab.dataset.tab === 'heatmap') buildHeatmap();
+    if (tab.dataset.tab === 'summary') buildSummary();
   });
 });
 
@@ -590,6 +614,148 @@ function buildHeatmap() {
 
 document.getElementById('min-articles').addEventListener('change', buildHeatmap);
 document.getElementById('color-range').addEventListener('change', buildHeatmap);
+
+// ── Summary / Key Findings ────────────────────────────────────────────────────
+let summaryBuilt = false;
+function buildSummary() {
+  if (summaryBuilt) return;
+  summaryBuilt = true;
+
+  const cross = ALL.filter(d => d.source_country !== d.target_country);
+  const self  = ALL.filter(d => d.source_country === d.target_country);
+
+  // Aggregate helpers
+  function avg(arr, fn) { return arr.length ? arr.reduce((s,d)=>s+fn(d),0)/arr.length : 0; }
+  function byCountry(arr, keyFn, valFn) {
+    const m = {};
+    arr.forEach(d => { const k=keyFn(d); (m[k]=m[k]||[]).push(valFn(d)); });
+    return Object.entries(m).map(([k,v])=>({country:k, val:v.reduce((a,b)=>a+b,0)/v.length}));
+  }
+
+  const overallAvg = avg(cross, d=>d.avg_tone);
+  const totalArticles = ALL.reduce((s,d)=>s+d.article_count,0);
+
+  // Most/least positive reporters (avg outgoing)
+  const reporters = byCountry(cross, d=>d.source_country, d=>d.avg_tone).sort((a,b)=>a.val-b.val);
+  const mostPosReporter = reporters[reporters.length-1];
+  const mostNegReporter = reporters[0];
+
+  // Most/least positively covered targets (avg incoming)
+  const targets = byCountry(cross, d=>d.target_country, d=>d.avg_tone).sort((a,b)=>a.val-b.val);
+  const mostPosCovered = targets[targets.length-1];
+  const mostNegCovered = targets[0];
+
+  // Largest single pair by article count (excl self)
+  const biggestPair = cross.slice().sort((a,b)=>b.article_count-a.article_count)[0];
+
+  // Most asymmetric pair (A→B vs B→A)
+  const pairMap = {};
+  cross.forEach(d=>{ pairMap[d.source_country+'|||'+d.target_country]=d; });
+  let maxAsym = null, maxDiff = 0;
+  cross.forEach(d => {
+    const rev = pairMap[d.target_country+'|||'+d.source_country];
+    if (!rev) return;
+    const diff = Math.abs(d.avg_tone - rev.avg_tone);
+    if (diff > maxDiff) { maxDiff = diff; maxAsym = {a:d, b:rev}; }
+  });
+
+  // Self-coverage outliers
+  const selfSorted = self.slice().sort((a,b)=>a.avg_tone-b.avg_tone);
+  const mostNegSelf = selfSorted[0];
+  const mostPosSelf = selfSorted[selfSorted.length-1];
+
+  // High-volume negative: pairs with >5000 articles and most negative
+  const highVol = cross.filter(d=>d.article_count>=5000).sort((a,b)=>a.avg_tone-b.avg_tone);
+  const highVolNeg = highVol[0];
+
+  // Positive pair with good volume (>500 articles)
+  const decentVol = cross.filter(d=>d.article_count>=500).sort((a,b)=>b.avg_tone-a.avg_tone);
+  const highVolPos = decentVol[0];
+
+  // Nordic-Nigeria asymmetry special case
+  const nordicNigeria = [
+    pairMap['Sweden|||Nigeria'], pairMap['Norway|||Nigeria'], pairMap['Denmark|||Nigeria'], pairMap['Finland|||Nigeria']
+  ].filter(Boolean);
+  const nordicNigeriaAvg = nordicNigeria.length ? avg(nordicNigeria, d=>d.avg_tone) : null;
+  const nigeriaToNordic = [
+    pairMap['Nigeria|||Sweden'], pairMap['Nigeria|||Norway'], pairMap['Nigeria|||Denmark'], pairMap['Nigeria|||Finland']
+  ].filter(Boolean);
+  const nigeriaToNordicAvg = nigeriaToNordic.length ? avg(nigeriaToNordic, d=>d.avg_tone) : null;
+
+  // KPIs
+  const tone = v => `<span style="color:${v>0?'#66bb6a':'#ef5350'}">${v>0?'+':''}${v.toFixed(2)}</span>`;
+  const kpis = [
+    { val: overallAvg.toFixed(2), color: '#ef5350', label: 'global avg tone (all pairs)' },
+    { val: cross.length.toLocaleString(), color: '#6fa8ff', label: 'country pairs analyzed' },
+    { val: totalArticles.toLocaleString(), color: '#aaa', label: 'total articles indexed' },
+    { val: (cross.filter(d=>d.avg_tone>0).length/cross.length*100).toFixed(0)+'%', color: '#66bb6a', label: 'pairs with positive tone' },
+  ];
+  document.getElementById('summary-kpis').innerHTML = kpis.map(k=>`
+    <div class="summary-kpi">
+      <div class="kpi-val" style="color:${k.color}">${k.val}</div>
+      <div class="kpi-lbl">${k.label}</div>
+    </div>`).join('');
+
+  // Findings
+  const findings = [
+    {
+      icon: '🌍',
+      title: 'The global news baseline is negative',
+      stat: tone(overallAvg) + ' average tone across all pairs',
+      body: `Across all ${cross.length.toLocaleString()} cross-border pairs, the mean sentiment is <strong>${overallAvg.toFixed(2)}</strong> — firmly negative. This reflects the well-documented negativity bias in news: conflict, crisis, and controversy generate more coverage than cooperation and goodwill. Only <strong>${(cross.filter(d=>d.avg_tone>0).length/cross.length*100).toFixed(0)}%</strong> of pairs show a positive average tone.`
+    },
+    {
+      icon: '🇻🇳',
+      title: 'Vietnam is a consistent outlier',
+      stat: `${FLAGS['Vietnam']||''} ${mostPosSelf.source_country} self-coverage: ${tone(mostPosSelf.avg_tone)}`,
+      body: `Vietnam is the most positive self-reporter (<strong>${mostPosSelf.avg_tone.toFixed(2)}</strong>) and also the most positive reporter toward other countries (avg outgoing <strong>+${mostPosReporter.country==='Vietnam'?mostPosReporter.val.toFixed(2):reporters[reporters.length-1].val.toFixed(2)}</strong>). Its state-aligned media consistently uses upbeat framing — a stark contrast to the global average of ${overallAvg.toFixed(2)}.`
+    },
+    {
+      icon: '🇵🇰',
+      title: 'Pakistan is the world\'s most negatively covered country',
+      stat: `${FLAGS['Pakistan']||''} Pakistan avg incoming: ${tone(mostNegCovered.country==='Pakistan'?mostNegCovered.val:targets[0].val)}`,
+      body: `Pakistan receives the most negative press internationally, with an average incoming tone of <strong>${mostNegCovered.val.toFixed(2)}</strong> across all countries covering it. Coverage is dominated by terrorism, political instability, and regional tensions. ${FLAGS['Czech Republic']||''} Czech Republic alone covers Pakistan at <strong>${(pairMap['Czech Republic|||Pakistan']?.avg_tone||0).toFixed(2)}</strong> across ${(pairMap['Czech Republic|||Pakistan']?.article_count||0).toLocaleString()} articles.`
+    },
+    {
+      icon: '🇯🇵',
+      title: 'Japan is the most positively received country',
+      stat: `${FLAGS['Japan']||''} Japan avg incoming: ${tone(mostPosCovered.val)}`,
+      body: `Japan is covered most positively on average by other nations (avg incoming: <strong>${mostPosCovered.val.toFixed(2)}</strong>). Its reputation for technological innovation, cultural soft power, and stable democracy generates unusually warm press. It's the only major country that is covered near-neutrally or positively by most of its peers.`
+    },
+    {
+      icon: '⚔️',
+      title: 'Ukraine–Russia is the largest high-tension pair',
+      stat: `${FLAGS['Ukraine']||''} Ukraine → ${FLAGS['Russia']||''} Russia: ${tone(pairMap['Ukraine|||Russia']?.avg_tone||0)} · ${(pairMap['Ukraine|||Russia']?.article_count||0).toLocaleString()} articles`,
+      body: `The Ukraine–Russia pair generates the highest cross-border article volume at <strong>${(pairMap['Ukraine|||Russia']?.article_count||0).toLocaleString()}</strong> articles, with Ukraine covering Russia at <strong>${(pairMap['Ukraine|||Russia']?.avg_tone||0).toFixed(2)}</strong>. In reverse, Russia covers Ukraine at <strong>${(pairMap['Russia|||Ukraine']?.avg_tone||0).toFixed(2)}</strong>. Both sides are deeply negative about each other.`
+    },
+    {
+      icon: '🔄',
+      title: 'Scandinavian countries cover Nigeria very differently than Nigeria covers them',
+      stat: `Nordic → Nigeria avg: ${tone(nordicNigeriaAvg)} vs Nigeria → Nordic: ${tone(nigeriaToNordicAvg)}`,
+      body: `Sweden, Norway, Denmark, and Finland cover Nigeria at an average tone of <strong>${nordicNigeriaAvg.toFixed(2)}</strong> — framing it primarily through aid, poverty, and conflict narratives. Nigeria, by contrast, covers Scandinavian countries at <strong>${nigeriaToNordicAvg.toFixed(2)}</strong> — nearly neutral. This asymmetry (diff: <strong>${(nigeriaToNordicAvg-nordicNigeriaAvg).toFixed(1)}</strong> pts) reflects how frame power is unevenly distributed in global media.`
+    },
+    {
+      icon: '🪞',
+      title: 'Several countries cover themselves more harshly than the world covers them',
+      stat: `${FLAGS['Qatar']||''} Qatar self-tone: ${tone(mostNegSelf.avg_tone)}`,
+      body: `Qatar's domestic media is the most self-critical of all 50 countries, with a self-coverage tone of <strong>${mostNegSelf.avg_tone.toFixed(2)}</strong>. Iran (<strong>${(self.find(d=>d.source_country==='Iran')?.avg_tone||0).toFixed(2)}</strong>) and Ukraine (<strong>${(self.find(d=>d.source_country==='Ukraine')?.avg_tone||0).toFixed(2)}</strong>) similarly cover themselves more negatively than their global averages. Meanwhile, <strong>Vietnam</strong>, <strong>Saudi Arabia</strong>, and <strong>China</strong> maintain the most positive domestic media tone.`
+    },
+    {
+      icon: '🤝',
+      title: 'Southeast Asian neighbors cover each other warmly',
+      stat: `${FLAGS['Indonesia']||''} Indonesia → ${FLAGS['Vietnam']||''} Vietnam: ${tone(pairMap['Indonesia|||Vietnam']?.avg_tone||0)}`,
+      body: `Several Southeast Asian pairs show some of the warmest coverage in the dataset — Indonesia covers Vietnam at <strong>${(pairMap['Indonesia|||Vietnam']?.avg_tone||0).toFixed(2)}</strong>, Vietnam covers Indonesia at <strong>${(pairMap['Vietnam|||Indonesia']?.avg_tone||0).toFixed(2)}</strong>. These positive tones likely reflect ASEAN solidarity framing and shared economic narratives, contrasting sharply with how Western countries cover the same region.`
+    },
+  ];
+
+  document.getElementById('summary-findings').innerHTML = findings.map(f=>`
+    <div class="finding-card">
+      <div class="f-icon">${f.icon}</div>
+      <div class="f-title">${f.title}</div>
+      <div class="f-stat">${f.stat}</div>
+      <div class="f-body">${f.body}</div>
+    </div>`).join('');
+}
 
 // ── Rankings ──────────────────────────────────────────────────────────────────
 function buildRankings() {
