@@ -347,6 +347,50 @@
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+    /* ── Mobile ──────────────────────────────── */
+    @media (max-width: 600px) {
+      header {
+        padding: 14px 16px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      header h1 { font-size: 1.15rem; }
+      header p  { font-size: 0.78rem; }
+
+      .tabs {
+        padding: 10px 8px 0;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+      }
+      .tab { padding: 8px 13px; font-size: 0.82rem; white-space: nowrap; flex-shrink: 0; }
+
+      .page { padding: 16px; }
+
+      /* Summary */
+      .summary-kpi { min-width: 120px; padding: 14px 16px; }
+      .summary-kpi .kpi-val { font-size: 1.4rem; }
+
+      /* Rankings / stat-grid */
+      .stat-grid { grid-template-columns: 1fr 1fr; }
+
+      /* Pairs controls */
+      .pairs-controls { gap: 8px; }
+      .pairs-controls input { width: 100%; }
+      .pairs-controls select { width: 100%; }
+
+      /* Explorer */
+      .bar-country { flex: 0 0 80px; width: 80px; font-size: 0.72rem; }
+      .bar-val { flex: 0 0 44px; width: 44px; font-size: 0.7rem; }
+
+      /* Heatmap controls */
+      #heatmap-controls { gap: 10px; }
+      #heatmap-controls label { font-size: 0.8rem; }
+
+      /* About table — allow horizontal scroll */
+      .about-table { display: block; overflow-x: auto; }
+    }
   </style>
 </head>
 <body>
@@ -883,14 +927,14 @@ function buildRankings() {
       const name = d.source_country || d.target_country || d.country;
       const score = d[scoreKey];
       const pct = Math.min(100, Math.abs(score) / maxAbsRankings * 100);
-      const color = score > 0 ? '#2d6a31' : '#6a2d2d';
-      const textColor = score > 0 ? '#66bb6a' : '#ef5350';
+      const barColor = score > 0 ? 'var(--bar-pos)' : 'var(--bar-neg)';
+      const textColor = score > 0 ? 'var(--bar-pos)' : 'var(--bar-neg)';
       container.innerHTML += `
         <div class="rank-row">
           <span class="rank-num">${i+1}</span>
           <span class="rank-flag">${FLAGS[name]||'🏳️'}</span>
           <span class="rank-name">${name}</span>
-          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%;background:${color}"></div></div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%;background:${barColor}"></div></div>
           <span class="rank-score" style="color:${textColor}">${score>0?'+':''}${score.toFixed(2)}</span>
         </div>`;
     });
@@ -1015,7 +1059,7 @@ function selectCountry(c) {
       const isPos = v >= 0;
       const country = valFn === (x=>x.avg_tone) ? (d.source_country===c ? d.target_country : d.source_country) :
                        (d.source_country===c ? d.target_country : d.source_country);
-      const tc = isPos ? '#66bb6a' : '#ef5350';
+      const tc = isPos ? 'var(--bar-pos)' : 'var(--bar-neg)';
       const barClass = isPos ? 'pos' : 'neg';
       return `<div class="bar-row">
         <div class="bar-country" title="${country}">${FLAGS[country]||''} ${country}</div>
@@ -1029,7 +1073,7 @@ function selectCountry(c) {
   }
 
   const selfToneStr = self
-    ? `<span style="color:${self.avg_tone>0?'#66bb6a':'#ef5350'}">${self.avg_tone>0?'+':''}${self.avg_tone.toFixed(2)}</span>`
+    ? `<span style="color:${self.avg_tone>0?'var(--bar-pos)':'var(--bar-neg)'}">${self.avg_tone>0?'+':''}${self.avg_tone.toFixed(2)}</span>`
     : '<span style="color:#555">N/A</span>';
 
   document.getElementById('explorer-detail').innerHTML = `
@@ -1037,11 +1081,11 @@ function selectCountry(c) {
     <p class="subtitle">Self-coverage tone: ${selfToneStr} &nbsp;·&nbsp; ${(self?.positive_ratio||0).toFixed(1)}% positive &nbsp;·&nbsp; ${(self?.article_count||0).toLocaleString()} self-articles</p>
     <div class="stat-grid">
       <div class="stat-box">
-        <div class="val" style="color:${avgToneOut>0?'#66bb6a':'#ef5350'}">${avgToneOut>0?'+':''}${avgToneOut.toFixed(2)}</div>
+        <div class="val" style="color:${avgToneOut>0?'var(--bar-pos)':'var(--bar-neg)'}">${avgToneOut>0?'+':''}${avgToneOut.toFixed(2)}</div>
         <div class="lbl">Avg outgoing tone</div>
       </div>
       <div class="stat-box">
-        <div class="val" style="color:${avgToneIn>0?'#66bb6a':'#ef5350'}">${avgToneIn>0?'+':''}${avgToneIn.toFixed(2)}</div>
+        <div class="val" style="color:${avgToneIn>0?'var(--bar-pos)':'var(--bar-neg)'}">${avgToneIn>0?'+':''}${avgToneIn.toFixed(2)}</div>
         <div class="lbl">Avg incoming tone</div>
       </div>
       <div class="stat-box">
