@@ -259,7 +259,7 @@
 <div id="heatmap" class="page active">
   <div id="heatmap-controls">
     <label>Min articles: <input type="number" id="min-articles" value="0" min="0" step="100" style="width:90px"></label>
-    <label>Color range: ±<input type="number" id="color-range" value="5" min="1" max="20" style="width:60px"></label>
+    <label>Color range: ±<input type="number" id="color-range" value="3" min="1" max="20" style="width:60px"></label>
     <span style="font-size:0.82rem;color:#555">Click a cell to explore that pair &nbsp;·&nbsp; Gold border = self-coverage</span>
   </div>
   <div id="heatmap-container">
@@ -383,7 +383,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 // ── Heatmap ───────────────────────────────────────────────────────────────────
 function buildHeatmap() {
   const minA   = +document.getElementById('min-articles').value || 0;
-  const range  = +document.getElementById('color-range').value  || 5;
+  const range  = +document.getElementById('color-range').value  || 3;
 
   // Build lookup
   const lookup = {};

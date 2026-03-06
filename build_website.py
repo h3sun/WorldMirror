@@ -1,5 +1,5 @@
 """
-Regenerate website/index.html with latest data from results/merged_coverage.csv
+Regenerate index.html with latest data from results/merged_coverage.csv
 Run this after updating any data files.
 """
 
@@ -13,7 +13,7 @@ data = df.to_dict(orient="records")
 api_count = sum(1 for r in data if r.get("source") == "api")
 bq_count  = sum(1 for r in data if r.get("source") == "bigquery")
 
-with open("website/index.html") as f:
+with open("index.html") as f:
     html = f.read()
 
 # Embed data inline
@@ -27,7 +27,7 @@ html = re.sub(
     html
 )
 
-with open("website/index.html", "w") as f:
+with open("index.html", "w") as f:
     f.write(html)
 
 print(f"Website updated: {api_count} API + {bq_count} BigQuery pairs ({len(data)} total)")
