@@ -1,0 +1,15 @@
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+*.key
+application_default_credentials.json
+gcloud/
+
+# Large intermediate caches
+results/domain_mapping/ip_cache.json
+results/domain_mapping/raw_cache.json
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

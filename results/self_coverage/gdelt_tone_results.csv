@@ -1,0 +1,50 @@
+rank,country,fips,avg_tone,positive_ratio,article_count,status
+1,Saudi Arabia,SA,2.1187,66.96,1483,ok
+2,Vietnam,VM,2.0676,67.93,24767,ok
+3,Qatar,QA,2.0105,63.36,666,ok
+4,China,CH,1.4573,65.05,69934,ok
+5,Egypt,EG,1.332,59.21,9853,ok
+6,Thailand,TH,1.0946,57.99,4301,ok
+7,Indonesia,ID,0.2496,49.27,27571,ok
+8,Japan,JA,0.2201,46.62,13744,ok
+9,Bangladesh,BG,0.1702,45.78,8830,ok
+10,Malaysia,MY,0.0119,46.08,2524,ok
+11,Italy,IT,-0.1327,45.95,43511,ok
+12,Turkey,TU,-0.1626,44.21,35998,ok
+13,Singapore,SN,-0.2852,44.29,2041,ok
+14,India,IN,-0.3082,43.47,56516,ok
+15,Canada,CA,-0.3208,40.46,22930,ok
+16,Philippines,RP,-0.3475,44.62,2705,ok
+17,Brazil,BR,-0.4724,39.35,21744,ok
+18,New Zealand,NZ,-0.5161,40.1,3823,ok
+19,South Korea,KS,-0.5669,36.69,7860,ok
+20,South Africa,SF,-0.5895,39.11,2626,ok
+21,Chile,CI,-0.6464,37.33,3860,ok
+22,Romania,RO,-0.6843,35.89,17013,ok
+23,Poland,PL,-0.8665,32.66,9523,ok
+24,Nigeria,NI,-0.8742,40.01,7713,ok
+25,United Kingdom,UK,-0.9091,30.34,49276,ok
+26,Peru,PE,-0.9716,33.16,5730,ok
+27,Spain,SP,-1.0416,29.29,39054,ok
+28,Argentina,AR,-1.0552,31.54,21046,ok
+29,Mexico,MX,-1.1382,30.93,37651,ok
+30,Greece,GR,-1.1466,30.89,23971,ok
+31,Colombia,CO,-1.1759,30.87,12930,ok
+32,Australia,AS,-1.2228,30.06,31793,ok
+33,Czech Republic,EZ,-1.3078,27.68,1774,ok
+34,Portugal,PO,-1.3085,29.55,5864,ok
+35,Netherlands,NL,-1.3497,29.1,2605,ok
+36,Belgium,BE,-1.4153,28.18,1423,ok
+37,Pakistan,PK,-1.4348,31.66,5543,ok
+38,Norway,NO,-1.4349,22.25,2674,ok
+39,Finland,FI,-1.491,27.65,8133,ok
+40,Denmark,DA,-1.4928,25.78,2358,ok
+41,United States,US,-1.5906,27.69,98225,ok
+42,Germany,GM,-1.683,21.1,46351,ok
+43,France,FR,-1.8021,23.56,19416,ok
+44,Sweden,SW,-1.8755,21.14,3766,ok
+45,Russia,RS,-1.883,27.28,48450,ok
+46,Iraq,IZ,-2.3025,20.54,896,ok
+47,Israel,IS,-3.0271,16.55,12638,ok
+48,Ukraine,UP,-3.1538,18.77,39464,ok
+49,Iran,IR,-4.3253,7.53,1460,ok
