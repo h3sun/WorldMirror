@@ -428,6 +428,10 @@
 <div id="summary" class="page active">
   <p class="summary-intro" data-i18n="summaryIntro">The following findings are computed directly from the dataset — 2,447 country pairs spanning 50 countries over the last 30 days. All tone scores use GDELT's LIWC-based metric where higher = more positive language.</p>
   <div class="summary-kpi-row" id="summary-kpis"></div>
+  <div class="card" style="margin-bottom:28px;padding:20px">
+    <div class="panel-title" data-i18n="quadrantSummaryTitle">Global Media Reporting Map</div>
+    <div id="summary-quadrant"></div>
+  </div>
   <div class="findings-grid" id="summary-findings"></div>
 </div>
 
@@ -792,6 +796,8 @@ function buildSummary() {
       <div class="f-stat">${f.stat}</div>
       <div class="f-body">${f.body}</div>
     </div>`).join('');
+
+  buildQuadrant('summary-quadrant', null, { showFlags: true });
 }
 
 // ── Rankings ──────────────────────────────────────────────────────────────────
@@ -1022,7 +1028,167 @@ function selectCountry(c) {
         <div class="panel-title">${ex_t.explorerCoveredNeg}</div>
         ${barRows(coveredNeg, d=>d.avg_tone)}
       </div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <div class="panel-title">${ex_t.quadrantTitle}</div>
+      <div id="quadrant-chart"></div>
     </div>`;
+  buildQuadrant('quadrant-chart', c);
+}
+
+// ── Quadrant Chart ────────────────────────────────────────────────────────────
+function buildQuadrant(containerId, c, opts = {}) {
+  const showFlags = opts.showFlags || false;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  // Compute avg outgoing / incoming for every country
+  const stats = {};
+  COUNTRIES.forEach(country => {
+    const out = ALL.filter(d => d.source_country === country && d.target_country !== country);
+    const inn = ALL.filter(d => d.target_country === country && d.source_country !== country);
+    if (out.length && inn.length) {
+      stats[country] = {
+        out: out.reduce((s,d) => s + d.avg_tone, 0) / out.length,
+        inn: inn.reduce((s,d) => s + d.avg_tone, 0) / inn.length,
+      };
+    }
+  });
+  const data = Object.entries(stats).map(([name, v]) => ({ name, ...v }));
+  if (!data.length) return;
+
+  const t   = I18N[lang];
+  const W   = container.clientWidth || 380;
+  const H   = 320;
+  const m   = { top: 24, right: 24, bottom: 52, left: 56 };
+  const w   = W - m.left - m.right;
+  const h   = H - m.top  - m.bottom;
+
+  const xExt = d3.extent(data, d => d.out);
+  const yExt = d3.extent(data, d => d.inn);
+  const xPad = Math.max(0.25, (xExt[1] - xExt[0]) * 0.12);
+  const yPad = Math.max(0.25, (yExt[1] - yExt[0]) * 0.12);
+
+  const xSc = d3.scaleLinear().domain([xExt[0]-xPad, xExt[1]+xPad]).range([0, w]);
+  const ySc = d3.scaleLinear().domain([yExt[0]-yPad, yExt[1]+yPad]).range([h, 0]);
+
+  const cs  = getComputedStyle(document.documentElement);
+  const axCol  = cs.getPropertyValue('--text-3').trim()  || '#666';
+  const txtCol = cs.getPropertyValue('--text-2').trim()  || '#888';
+  const gridCl = cs.getPropertyValue('--zero-ln').trim() || '#444';
+  const bgCol  = cs.getPropertyValue('--bg-3').trim()    || '#1e2230';
+
+  d3.select(container).selectAll('*').remove();
+  const svg = d3.select(container).append('svg').attr('width', W).attr('height', H);
+  const g   = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
+
+  // Quadrant background shading
+  const x0 = xSc(0), y0 = ySc(0);
+  const qAlpha = '18';
+  [
+    { x:0,  y:0,  w:x0, h:y0,   fill:'#ef5350' },   // top-left
+    { x:x0, y:0,  w:w-x0, h:y0, fill:'#66bb6a' },   // top-right
+    { x:0,  y:y0, w:x0, h:h-y0, fill:'#ffb74d' },   // bottom-left
+    { x:x0, y:y0, w:w-x0, h:h-y0, fill:'#6fa8ff' }, // bottom-right
+  ].forEach(q => {
+    g.append('rect').attr('x',q.x).attr('y',q.y).attr('width',q.w).attr('height',q.h)
+      .attr('fill', q.fill).attr('opacity', 0.06);
+  });
+
+  // Zero lines
+  g.append('line').attr('x1',x0).attr('x2',x0).attr('y1',0).attr('y2',h)
+    .attr('stroke', gridCl).attr('stroke-width',1).attr('stroke-dasharray','4,3');
+  g.append('line').attr('x1',0).attr('x2',w).attr('y1',y0).attr('y2',y0)
+    .attr('stroke', gridCl).attr('stroke-width',1).attr('stroke-dasharray','4,3');
+
+  // Shared tooltip
+  let tip = document.getElementById('quadrant-tip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'quadrant-tip';
+    Object.assign(tip.style, {
+      position:'fixed', background:'var(--bg-3)', border:'1px solid var(--border-2)',
+      borderRadius:'6px', padding:'8px 12px', fontSize:'0.8rem', color:'var(--text)',
+      pointerEvents:'none', display:'none', zIndex:'200', maxWidth:'200px',
+    });
+    document.body.appendChild(tip);
+  }
+
+  // Tooltip handler (shared)
+  const bindTip = sel => sel
+    .on('mousemove', (event, d) => {
+      tip.style.display = 'block';
+      tip.style.left = (event.clientX + 14) + 'px';
+      tip.style.top  = (event.clientY - 10) + 'px';
+      tip.innerHTML  = `<strong>${FLAGS[d.name]||''} ${cn(d.name)}</strong><br>
+        ${t.quadrantXShort}: <span style="color:${d.out>=0?'#66bb6a':'#ef5350'}">${d.out>0?'+':''}${d.out.toFixed(2)}</span><br>
+        ${t.quadrantYShort}: <span style="color:${d.inn>=0?'#66bb6a':'#ef5350'}">${d.inn>0?'+':''}${d.inn.toFixed(2)}</span>`;
+    })
+    .on('mouseleave', () => { tip.style.display = 'none'; });
+
+  if (showFlags) {
+    // Flag emoji mode (summary page)
+    g.selectAll('text.qflag').data(data).join('text')
+      .attr('class','qflag')
+      .attr('x', d => xSc(d.out))
+      .attr('y', d => ySc(d.inn))
+      .attr('text-anchor','middle')
+      .attr('dominant-baseline','central')
+      .attr('font-size', 15)
+      .style('cursor','pointer')
+      .text(d => FLAGS[d.name] || '🏳️')
+      .call(bindTip);
+  } else {
+    // Dot mode (explorer page) with selected country highlighted
+    g.selectAll('circle.qdot').data(data).join('circle')
+      .attr('class','qdot')
+      .attr('cx', d => xSc(d.out))
+      .attr('cy', d => ySc(d.inn))
+      .attr('r',  d => d.name === c ? 8 : 5)
+      .attr('fill', d => {
+        if (d.name === c) return 'var(--accent)';
+        return (d.out >= 0 && d.inn >= 0) ? '#3d9142'
+             : (d.out <  0 && d.inn <  0) ? '#c0372f'
+             : '#888';
+      })
+      .attr('opacity', d => d.name === c ? 1 : 0.55)
+      .attr('stroke', d => d.name === c ? 'var(--bg-2)' : 'none')
+      .attr('stroke-width', d => d.name === c ? 2 : 0)
+      .style('cursor','pointer')
+      .call(bindTip);
+
+    // Label for selected country
+    const sel = data.find(d => d.name === c);
+    if (sel) {
+      const lx = xSc(sel.out), ly = ySc(sel.inn);
+      g.append('text')
+        .attr('x', lx).attr('y', ly > 16 ? ly - 12 : ly + 18)
+        .attr('text-anchor','middle').attr('font-size',11)
+        .attr('fill','var(--accent)').attr('font-weight','600')
+        .text(`${FLAGS[c]||''} ${cn(c)}`);
+    }
+  }
+
+  // Axes
+  g.append('g').attr('transform', `translate(0,${h})`)
+    .call(d3.axisBottom(xSc).ticks(5).tickFormat(d3.format('+.1f')))
+    .call(ax => ax.selectAll('text').attr('fill', axCol).attr('font-size', 9))
+    .call(ax => ax.selectAll('line,path').attr('stroke', axCol));
+
+  g.append('g')
+    .call(d3.axisLeft(ySc).ticks(5).tickFormat(d3.format('+.1f')))
+    .call(ax => ax.selectAll('text').attr('fill', axCol).attr('font-size', 9))
+    .call(ax => ax.selectAll('line,path').attr('stroke', axCol));
+
+  // Axis labels
+  g.append('text').attr('x', w/2).attr('y', h + 42)
+    .attr('text-anchor','middle').attr('font-size',10).attr('fill', txtCol)
+    .text(t.quadrantXLabel);
+  g.append('text')
+    .attr('transform','rotate(-90)')
+    .attr('x', -h/2).attr('y', -44)
+    .attr('text-anchor','middle').attr('font-size',10).attr('fill', txtCol)
+    .text(t.quadrantYLabel);
 }
 
 // ── Internationalisation ───────────────────────────────────────────────────────
@@ -1057,6 +1223,11 @@ const I18N = {
     ttTone: 'Tone:', ttPositive: 'Positive:', ttArticles: 'Articles:', ttNoData: 'No data',
     tonePos: 'positive', toneNeg: 'negative', toneNeu: 'neutral',
     hmAvgTone: 'Average Tone Score',
+    quadrantSummaryTitle: 'Global Media Reporting Map',
+    quadrantTitle: 'Reporting vs. Coverage — All Countries',
+    quadrantXLabel: 'Avg outgoing tone (covers others →)',
+    quadrantYLabel: 'Avg incoming tone (covered by others)',
+    quadrantXShort: 'Outgoing', quadrantYShort: 'Incoming',
     summaryIntro: `The following findings are computed directly from the dataset — 2,447 country pairs spanning 50 countries over the last 30 days. All tone scores use GDELT's LIWC-based metric where higher = more positive language.`,
     kpiLabels: ['global avg tone (all pairs)', 'country pairs analyzed', 'total articles indexed', 'pairs with positive tone'],
     findings: (d) => [
@@ -1173,6 +1344,11 @@ const I18N = {
     ttTone: '情绪：', ttPositive: '正面占比：', ttArticles: '文章数：', ttNoData: '暂无数据',
     tonePos: '正面', toneNeg: '负面', toneNeu: '中性',
     hmAvgTone: '平均情绪分',
+    quadrantSummaryTitle: '全球媒体报道地图',
+    quadrantTitle: '报道与被报道四象限 — 全部国家',
+    quadrantXLabel: '平均对外情绪（报道他国 →）',
+    quadrantYLabel: '平均被报情绪（被他国报道）',
+    quadrantXShort: '对外', quadrantYShort: '被报',
     summaryIntro: `以下发现直接从数据集计算得出——涵盖50个国家的2,447个配对，时间范围为近30天。所有情绪分数采用GDELT的LIWC指标，数值越高表示语言越正面。`,
     kpiLabels: ['全球平均情绪（所有配对）', '已分析国家配对数', '收录文章总数', '情绪为正的配对比例'],
     findings: (d) => [
